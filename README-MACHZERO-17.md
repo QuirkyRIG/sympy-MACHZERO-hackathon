@@ -1,104 +1,185 @@
-# SymPy #30976 — Independent Approach to Incorrect Sign Evaluation
+SymPy Issue #30545: Error When Calculating the Limit of the Sinc Function
 
-## 1. Problem Statement
+1. Problem Statement
 
-SymPy sometimes produces incorrect negative results when evaluating absolute values and square roots of certain symbolic integer expressions.
+In SymPy version 1.14.0, calculating the limit of the sinc() function at zero raises a NotImplementedError.
 
-This is a mathematical correctness issue because:
+The mathematically equivalent expression sin(x)/x works correctly, but using the built-in sinc(x) function produces an error.
 
-- Absolute values must always be nonnegative.
-- The principal square root of a real square must be nonnegative.
-- Symbolic assumptions must not produce contradictory mathematical results.
+Example
 
-## 2. Objective
+import sympy as sp
 
-Develop an independent solution that ensures symbolic expressions retain mathematically valid sign information throughout simplification and substitution.
+x = sp.symbols('x', real=True)
 
-The objective is to improve the reliability of sign evaluation without changing the intended mathematical behavior of existing SymPy functions.
+# This works correctly
+sp.limit(sp.sin(x) / x, x, 0)
 
-## 3. Proposed Investigation
+# This raises an error
+sp.limit(sp.sinc(x), x, 0)
 
-Instead of immediately modifying `Abs` or `sqrt`, we will investigate the complete evaluation process.
+Expected output:
 
-Our approach:
+1
 
-1. Examine how symbolic expressions obtain their sign properties.
-2. Investigate how integer and nonnegative assumptions influence expression evaluation.
-3. Identify whether an incorrect sign conclusion is introduced during expression construction, simplification, or substitution.
-4. Trace how that conclusion propagates into absolute-value and square-root evaluation.
+Actual result:
 
-## 4. Independent Solution Strategy
+NotImplementedError:
+sinc has no _eval_as_leading_term routine
 
-We propose investigating a validation-based approach to symbolic sign conclusions.
+The problem occurs because SymPy's limit calculation requires the leading-term representation of the expression, but the sinc function does not implement the required _eval_as_leading_term method.
 
-The approach will:
+2. Objective
 
-- Examine the assumptions available for each expression.
-- Distinguish proven sign information from unknown sign information.
-- Avoid relying on an unsupported sign conclusion.
-- Preserve unevaluated expressions when their sign cannot be established safely.
-- Ensure subsequent evaluation does not contradict established mathematical properties.
+The main objective is to fix the limit calculation of the sinc() function in SymPy.
 
-The precise implementation will be determined after identifying the source of the incorrect inference.
+The implementation should:
 
-## 5. Proposed Code Organization
+Enable SymPy to calculate limits involving sinc() correctly.
 
-### A. Sign Analysis
+Provide the required leading-term evaluation method.
 
-Investigate the existing assumptions and symbolic property evaluation mechanisms.
+Maintain consistency with the existing mathematical behaviour of sinc().
 
-Goal: Ensure sign information is mathematically justified before it is used in further evaluation.
+Avoid introducing regressions in other symbolic calculations.
 
-### B. Expression Evaluation
+Add regression tests to verify the correction.
 
-Investigate how `Abs` and square-root expressions consume sign information.
+3. Mathematical Background
 
-Goal: Prevent incorrect sign conclusions from propagating into evaluated expressions.
+The sinc function is defined as:
 
-### C. Regression Testing
+[
+\operatorname{sinc}(x)=\frac{\sin(x)}{x}
+]
 
-Create independent tests covering:
+At zero, its value is defined using continuity:
 
-- Integer symbols.
-- Nonnegative integer symbols.
-- Expressions with unknown sign.
-- Positive and negative substitutions.
-- Absolute values of symbolic expressions.
-- Square roots of squared expressions.
+[
+\operatorname{sinc}(0)=1
+]
 
-## 6. Testing and Validation
+Using the standard limit:
 
-The solution must satisfy these mathematical invariants:
+[
+\lim_{x\to 0}\frac{\sin(x)}{x}=1
+]
 
-- `Abs(x) >= 0` for real `x`.
-- `sqrt(x**2) >= 0` for real `x`.
-- Substitution must preserve mathematically correct results.
-- Unknown symbolic signs must not be treated as proven positive or negative.
-- Existing valid simplifications must continue to work.
+Therefore:
 
-## 7. Expected Impact
+[
+\boxed{\lim_{x\to 0}\operatorname{sinc}(x)=1}
+]
 
-The proposed improvement aims to:
+Both expressions should produce the same mathematical result.
 
-- Increase reliability of symbolic sign inference.
-- Prevent incorrect negative outputs.
-- Improve consistency between symbolic evaluation and numerical substitution.
-- Reduce the possibility of similar regressions in other symbolic operations.
+4. Proposed Code Approach
 
-## 8. Implementation Scope
+The proposed solution is to implement the missing _eval_as_leading_term method for the sinc function.
 
-The solution will prioritize a minimal, independently developed correction.
+The implementation should follow the existing approach used by related functions such as sec and csc.
 
-Only the necessary existing SymPy components and regression tests will be modified.
+The proposed method should delegate the leading-term calculation to the equivalent expression:
 
-No unnecessary changes to the architecture or mathematical definitions of SymPy are intended.
+[
+\frac{\sin(\text{arg})}{\text{arg}}
+]
 
-## 9. Success Criteria
+Conceptual implementation
 
-The issue will be considered resolved when:
+def _eval_as_leading_term(self, x, logx=None, cdir=0):
+    arg = self.args[0]
 
-1. The original regression is reproducible before the fix.
-2. The proposed correction eliminates the incorrect result.
-3. All new regression tests pass.
-4. Relevant existing SymPy tests continue to pass.
-5. The fix does not introduce incorrect simplifications for expressions with unknown signs.
+    return (sin(arg) / arg).as_leading_term(
+        x, logx=logx, cdir=cdir
+    )
+
+Note: This is an illustrative implementation approach, not a verified final patch. The actual implementation must follow the existing SymPy class conventions and handle any necessary special cases.
+
+5. Testing Strategy
+
+After implementing the proposed method, the following regression tests should be performed.
+
+Test 1: Basic limit
+
+x = symbols('x')
+
+limit(sinc(x), x, 0)
+
+Expected output:
+
+1
+
+Test 2: Limit with squared argument
+
+limit(sinc(x**2), x, 0)
+
+Expected output:
+
+1
+
+Test 3: Right-hand limit
+
+limit(sinc(x), x, 0, dir='+')
+
+Expected output:
+
+1
+
+Test 4: Left-hand limit
+
+limit(sinc(x), x, 0, dir='-')
+
+Expected output:
+
+1
+
+All tests should pass without raising NotImplementedError.
+
+6. Final Fix
+
+Current status
+
+The issue discussion identifies the missing _eval_as_leading_term implementation as the proposed correction.
+
+The suggested fix is:
+
+Implement _eval_as_leading_term for sinc.
+
+Delegate the leading-term calculation to the equivalent sine-over-argument expression.
+
+Add regression tests for basic, squared-argument, right-hand and left-hand limits.
+
+Run the relevant SymPy test suite to ensure existing functionality is not affected.
+
+Expected corrected behaviour
+
+Before the fix:
+
+limit(sinc(x), x, 0)
+
+Raises:
+
+NotImplementedError
+
+After a successful fix:
+
+limit(sinc(x), x, 0)
+
+Returns:
+
+1
+
+Final verification status: The GitHub issue currently records the proposed approach, not a confirmed merged implementation. The fix should only be marked complete after the code is implemented, regression tests pass, and the pull request is accepted.
+
+7. Conclusion
+
+Issue #30545 is a symbolic limit-calculation bug in SymPy.
+
+The mathematical definition of the sinc function is correct, but its implementation lacks a required internal method for leading-term evaluation.
+
+Implementing _eval_as_leading_term and adding appropriate regression tests should resolve the reported problem.
+
+GitHub Issue: https://github.com/sympy/sympy/issues/30545
+
+Repository: https://github.com/sympy/sympy
