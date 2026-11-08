@@ -1,6 +1,6 @@
 SymPy Issue #30545: Error When Calculating the Limit of the Sinc Function
 
-1. Problem Statement
+##1. Problem Statement
 
 In SymPy version 1.14.0, calculating the limit of the sinc() function at zero raises a NotImplementedError.
 
@@ -29,7 +29,7 @@ sinc has no _eval_as_leading_term routine
 
 The problem occurs because SymPy's limit calculation requires the leading-term representation of the expression, but the sinc function does not implement the required _eval_as_leading_term method.
 
-2. Objective
+##2. Objective
 
 The main objective is to fix the limit calculation of the sinc() function in SymPy.
 
@@ -46,7 +46,7 @@ Avoid introducing regressions in other symbolic calculations.
 Add regression tests to verify the correction.
 
 
-3. Proposed Code Approach
+##3. Proposed Code Approach
 
 The proposed solution is to implement the missing _eval_as_leading_term method for the sinc function.
 
@@ -64,7 +64,7 @@ def _eval_as_leading_term(self, x, logx=None, cdir=0):
 
 Note: This is an illustrative implementation approach, not a verified final patch. The actual implementation must follow the existing SymPy class conventions and handle any necessary special cases.
 
-4. Testing Strategy
+##4. Testing Strategy
 
 After implementing the proposed method, the following regression tests should be performed.
 
@@ -96,7 +96,7 @@ Expected output:1
 
 All tests should pass without raising NotImplementedError.
 
-5. Final Fix
+##5. Final Fix
 
 Current status
 
