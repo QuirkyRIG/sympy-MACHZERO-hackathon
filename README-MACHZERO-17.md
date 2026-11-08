@@ -53,18 +53,14 @@ The proposed solution is to implement the missing _eval_as_leading_term method f
 The implementation should follow the existing approach used by related functions such as sec and csc.
 
 The proposed method should delegate the leading-term calculation to the equivalent expression:
-[
-\frac{\sin(\text{arg})}{\text{arg}}
-]
+[\frac{\sin(\text{arg})}{\text{arg}}]
 
 Conceptual implementation
 
 def _eval_as_leading_term(self, x, logx=None, cdir=0):
     arg = self.args[0]
 
-    return (sin(arg) / arg).as_leading_term(
-        x, logx=logx, cdir=cdir
-    )
+    return (sin(arg) / arg).as_leading_term(x, logx=logx, cdir=cdir)
 
 Note: This is an illustrative implementation approach, not a verified final patch. The actual implementation must follow the existing SymPy class conventions and handle any necessary special cases.
 
@@ -78,33 +74,25 @@ x = symbols('x')
 
 limit(sinc(x), x, 0)
 
-Expected output:
-
-1
+Expected output:1
 
 Test 2: Limit with squared argument
 
 limit(sinc(x**2), x, 0)
 
-Expected output:
-
-1
+Expected output:1
 
 Test 3: Right-hand limit
 
 limit(sinc(x), x, 0, dir='+')
 
-Expected output:
-
-1
+Expected output:1
 
 Test 4: Left-hand limit
 
 limit(sinc(x), x, 0, dir='-')
 
-Expected output:
-
-1
+Expected output:1
 
 All tests should pass without raising NotImplementedError.
 
@@ -162,20 +150,15 @@ The implementation should follow the existing approach used by related functions
 
 The proposed method should delegate the leading-term calculation to the equivalent expression:
 
-[
-\frac{\sin(\text{arg})}{\text{arg}}
-]
+[\frac{\sin(\text{arg})}{\text{arg}}]
 
 Conceptual implementation
 
 def _eval_as_leading_term(self, x, logx=None, cdir=0):
     arg = self.args[0]
 
-    return (sin(arg) / arg).as_leading_term(
-        x, logx=logx, cdir=cdir
-    )
+    return (sin(arg) / arg).as_leading_term(x, logx=logx, cdir=cdir)
 
-Note: This is an illustrative implementation approach, not a verified final patch. The actual implementation must follow the existing SymPy class conventions and handle any necessary special cases.
 
 5. Testing Strategy
 
